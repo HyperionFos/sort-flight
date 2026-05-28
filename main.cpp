@@ -33,6 +33,20 @@ struct Flight{
     bool operator>=(const Flight& o) const { return compare(o) >= 0; }
 };
 
+void bubbleSort(std::vector<Flight>& a) {
+    size_t n = a.size();
+    for (size_t i = 0; i < n-1; ++i) {
+        bool swapped = false;
+        for (size_t j = 0; j < n - 1 - i; ++j) {
+            if (a[j] > a[j+1]) {
+                std::swap(a[j], a[j+1]);
+                swapped = true;
+            }
+        }
+        if (!swapped) break;
+    } 
+}
+
 std::vector<Flight> readFlights(const std::string& path){
     std::vector<Flight> flights;
     std::ifstream in(path);
@@ -77,17 +91,29 @@ void writeFlights(const std::string& path, const std::vector<Flight>& flights) {
     }
 }
 
-int main() {
-    std::vector<Flight> flights = readFlights("data/input.csv");
-    std::cout << "read " << flights.size() << " flights\n";
-
+void printFlights(const std::string& title, const std::vector<Flight>& flights) {
+    std::cout << "===== " << title << " =====\n";
     for (const Flight& f : flights) {
         std::cout << f.flightNumber << " | " << f.airline << " | "
                 << f.arrivalDate << " | " << f.arrivalTime << " | "
                 << f.passangers << "\n";
     }
+}
+
+int main() {
+    std::vector<Flight> flights = readFlights("data/input.csv");
+    std::cout << "read " << flights.size() << " flights\n";
+
+    printFlights("before sort", flights);
+
+    bubbleSort(flights);
+    std::cout << "sorted with bubble\n";
+
+    printFlights("after sort", flights);
 
     writeFlights("data/output.csv", flights);
     std::cout << "wrote data/output.csv\n";
     return 0;
+
+
 }

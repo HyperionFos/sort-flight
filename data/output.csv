@@ -1,6 +1,6 @@
 flightNumber,airline,arrivalDate,arrivalTime,passangers
-SU200,Aeroflot,2024-03-15,08:30,200
-S7300,S7,2024-03-16,06:00,150
-SU100,Aeroflot,2024-03-15,08:30,180
 DP450,Pobeda,2024-03-14,22:15,170
+SU200,Aeroflot,2024-03-15,08:30,200
+SU100,Aeroflot,2024-03-15,08:30,180
 U6777,UralAirlines,2024-03-15,08:30,160
+S7300,S7,2024-03-16,06:00,150
