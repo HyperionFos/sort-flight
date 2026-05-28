@@ -1,5 +1,8 @@
 #include <iostream>
-
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 struct Flight{
     std::string flightNumber;
@@ -30,22 +33,61 @@ struct Flight{
     bool operator>=(const Flight& o) const { return compare(o) >= 0; }
 };
 
+std::vector<Flight> readFlights(const std::string& path){
+    std::vector<Flight> flights;
+    std::ifstream in(path);
+    if (!in){
+        std::cerr << "Error: cannont open file " << path << "\n";
+        return flights;
+    }
+    std::string line;
+    std::getline(in, line);
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+
+        std::stringstream ss(line);
+        Flight f;
+        std::string token;
+        std::getline(ss, f.flightNumber, ',');
+        std::getline(ss, f.airline, ',');
+        std::getline(ss, f.arrivalDate, ',');
+        std::getline(ss, f.arrivalTime, ',');
+        std::getline(ss, token, ',');
+        f.passangers = std::stoi(token);
+
+        flights.push_back(f);
+    }
+    return flights;
+}
+
+void writeFlights(const std::string& path, const std::vector<Flight>& flights) {
+    std::ofstream out(path);
+    if (!out) {
+        std::cerr << "Error: cannot write file " << path << "\n";
+        return;
+    }
+
+    out << "flightNumber,airline,arrivalDate,arrivalTime,passangers\n";
+    for (const Flight& f : flights) {
+        out << f.flightNumber << ','
+            << f.airline << ','
+            << f.arrivalDate << ','
+            << f.arrivalTime << ','
+            << f.passangers << '\n';
+    }
+}
+
 int main() {
-    Flight a{"SU100", "Aeroflot", "2024-03-15", "08:30", 180};
-    Flight b{"SU200", "Aeroflot", "2024-03-15", "08:30", 200};
-    Flight c{"S7300",  "S7",      "2024-03-16", "06:00", 150};
+    std::vector<Flight> flights = readFlights("data/input.csv");
+    std::cout << "read " << flights.size() << " flights\n";
 
-    // a и b: всё совпадает, кроме пассажиров. У b их больше -> b раньше.
-    // Значит a > b
-    std::cout << "a < b  : " << (a < b)  << "  (expected 0)\n";
-    std::cout << "a > b  : " << (a > b)  << "  (expected 1)\n";
+    for (const Flight& f : flights) {
+        std::cout << f.flightNumber << " | " << f.airline << " | "
+                << f.arrivalDate << " | " << f.arrivalTime << " | "
+                << f.passangers << "\n";
+    }
 
-    // c прилетает 16-го, a и b -- 15-го. Дата важнее всего -> c позже.
-    std::cout << "a < c  : " << (a < c)  << "  (expected 1)\n";
-    std::cout << "c < a  : " << (c < a)  << "  (expected 0)\n";
-
-    // равенство с самим собой
-    std::cout << "a <= a : " << (a <= a) << "  (expected 1)\n";
-    std::cout << "a <  a : " << (a < a)  << "  (expected 0)\n";
+    writeFlights("data/output.csv", flights);
+    std::cout << "wrote data/output.csv\n";
     return 0;
 }
