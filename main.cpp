@@ -34,6 +34,8 @@ struct Flight{
 };
 
 void bubbleSort(std::vector<Flight>& a) {
+    if (a.size() < 2) return;
+
     size_t n = a.size();
     for (size_t i = 0; i < n-1; ++i) {
         bool swapped = false;
@@ -45,6 +47,33 @@ void bubbleSort(std::vector<Flight>& a) {
         }
         if (!swapped) break;
     } 
+}
+
+void shakerSort(std::vector<Flight>& a) {
+    if (a.size() < 2) return;
+
+    size_t left = 0;
+    size_t right = a.size() - 1;
+    bool swapped = true;
+    while (swapped) {
+        swapped = false;
+        for (size_t j = left; j < right; ++j) {
+            if (a[j] > a[j+1]) {
+                std::swap(a[j], a[j+1]);
+                swapped = true;
+            }
+        }
+        -- right;
+        if (!swapped) break;
+        swapped = false;
+        for (size_t j = right; j > left; --j) {
+            if (a[j - 1] > a[j]) {
+                std::swap(a[j-1], a[j]);
+                swapped = true;
+            }
+        }
+        ++ left;
+    }
 }
 
 std::vector<Flight> readFlights(const std::string& path){
@@ -105,15 +134,16 @@ int main() {
     std::cout << "read " << flights.size() << " flights\n";
 
     printFlights("before sort", flights);
+    
+    std::vector<Flight> a = flights;
+    bubbleSort(a);
+    printFlights("after bubble sort", a);
 
-    bubbleSort(flights);
-    std::cout << "sorted with bubble\n";
-
-    printFlights("after sort", flights);
+    std::vector<Flight> b = flights;
+    shakerSort(b);
+    printFlights("after shaker sort", b);
 
     writeFlights("data/output.csv", flights);
     std::cout << "wrote data/output.csv\n";
     return 0;
-
-
 }
