@@ -5,13 +5,15 @@
 #include <vector>
 #include <chrono>
 #include <algorithm>
+#include <random>
+#include <iomanip>
 
 struct Flight{
     std::string flightNumber;
     std::string airline;
     std::string arrivalDate;
     std::string arrivalTime;
-    int passangers = 0;
+    int passengers = 0;
 
     int compare(const Flight& other) const {
         if (arrivalDate < other.arrivalDate) return -1;
@@ -23,8 +25,8 @@ struct Flight{
         if (airline < other.airline) return -1;
         if (airline > other.airline) return +1;
 
-        if (passangers > other.passangers) return -1;
-        if (passangers < other.passangers) return +1;
+        if (passengers > other.passengers) return -1;
+        if (passengers < other.passengers) return +1;
 
         return 0;
     }
@@ -35,15 +37,56 @@ struct Flight{
     bool operator>=(const Flight& o) const { return compare(o) >= 0; }
 };
 
-double measure(const std::string& name,
-    std::vector<Flight> data,
-    void (*sortFunc)(std::vector<Flight>&)){
+std::vector<Flight> generateFlights(size_t n, unsigned seed){
+    std::mt19937 rng(seed);
+    std::vector<std::string> airlines = {
+        "Aeroflot", "S7", "Pobeda", "UralAirlines", "Utair", "RedWings", "Azimuth"
+    };
+    std::uniform_int_distribution<int> airlineIdx(0, (int)airlines.size() - 1);
+    std::uniform_int_distribution<int> day(1, 28);
+    std::uniform_int_distribution<int> month(1, 12);
+    std::uniform_int_distribution<int> hour(0, 23);
+    std::uniform_int_distribution<int> minute(0, 59);
+    std::uniform_int_distribution<int> passengers(50, 350);
+    std::uniform_int_distribution<int> flightNo(100, 9999);
+
+    std::vector<Flight> flights;
+    flights.reserve(n);
+
+    for (size_t i = 0; i < n; ++i){
+        Flight f;
+        f.airline = airlines[airlineIdx(rng)];
+        f.flightNumber = f.airline.substr(0, 2) + std::to_string(flightNo(rng));
+
+        std::ostringstream date;
+        date << "2026-"
+             << std::setw(2) << std::setfill('0') << month(rng) << "-"
+             << std::setw(2) << std::setfill('0') << day(rng);
+        f.arrivalDate = date.str();
+
+        std::ostringstream time;
+        time << std::setw(2) << std::setfill('0') << hour(rng) << ":"
+             << std::setw(2) << std::setfill('0') << minute(rng);
+        f.arrivalTime = time.str();
+
+        f.passengers = passengers(rng);
+        flights.push_back(f);
+    }
+    return flights;
+}
+
+double measure(const std::vector<Flight>& source,
+               void (*sortFunc)(std::vector<Flight>&),
+               int runs = 3) {
+    double total = 0.0;
+    for (int r = 0; r < runs; ++r) {
+        std::vector<Flight> data = source;
         auto t1 = std::chrono::high_resolution_clock::now();
         sortFunc(data);
         auto t2 = std::chrono::high_resolution_clock::now();
-        double ms = std::chrono::duration<double, std::milli>(t2 - t1).count();
-        std::cout << name << ": " << ms << " ms\n";
-        return ms;
+        total += std::chrono::duration<double, std::milli>(t2 - t1).count();
+    }
+    return total / runs;
 }
 
 // std::sort немного изменненый чтобы measure мог принять его
@@ -160,7 +203,7 @@ std::vector<Flight> readFlights(const std::string& path){
         std::getline(ss, f.arrivalDate, ',');
         std::getline(ss, f.arrivalTime, ',');
         std::getline(ss, token, ',');
-        f.passangers = std::stoi(token);
+        f.passengers = std::stoi(token);
 
         flights.push_back(f);
     }
@@ -174,13 +217,13 @@ void writeFlights(const std::string& path, const std::vector<Flight>& flights) {
         return;
     }
 
-    out << "flightNumber,airline,arrivalDate,arrivalTime,passangers\n";
+    out << "flightNumber,airline,arrivalDate,arrivalTime,passengers\n";
     for (const Flight& f : flights) {
         out << f.flightNumber << ','
             << f.airline << ','
             << f.arrivalDate << ','
             << f.arrivalTime << ','
-            << f.passangers << '\n';
+            << f.passengers << '\n';
     }
 }
 
@@ -189,20 +232,38 @@ void printFlights(const std::string& title, const std::vector<Flight>& flights) 
     for (const Flight& f : flights) {
         std::cout << f.flightNumber << " | " << f.airline << " | "
                 << f.arrivalDate << " | " << f.arrivalTime << " | "
-                << f.passangers << "\n";
+                << f.passengers << "\n";
     }
 }
 
 int main() {
-    std::vector<Flight> flights = readFlights("data/input.csv");
-    std::cout << "read " << flights.size() << " flights\n";
+    std::vector<size_t> sizes = {
+        100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000
+    };
 
-    measure("bubble", flights, bubbleSort);
-    measure("shaker", flights, shakerSort);
-    measure("quick", flights, quickSort);
-    measure("std", flights, stdSort);
+    std::ofstream out("data/timings.csv");
+    out << "size,algorithm,time_ms\n";
 
- //   writeFlights("data/output.csv", c);
- //   std::cout << "wrote data/output.csv\n";
+    for (size_t n : sizes) {
+        std::cout << "size = " << n << "\n";
+        std::vector<Flight> source = generateFlights(n, 52);
+
+        double t_bubble = (n <= 50000) ? measure(source, bubbleSort) : -1.0;
+        double t_shaker = (n <= 50000) ? measure(source, shakerSort) : -1.0;
+        double t_quick = measure(source, quickSort);
+        double t_std = measure(source, stdSort);
+
+        if (t_bubble >= 0) std::cout << "  bubble: " << t_bubble << " ms\n";
+        if (t_shaker >= 0) std::cout << "  shaker: " << t_shaker << " ms\n";
+        std::cout << "  quick : " << t_quick << " ms\n";
+        std::cout << "  std   : " << t_std << " ms\n";
+
+        if (t_bubble >= 0) out << n << ",bubble," << t_bubble << "\n";
+        if (t_shaker >= 0) out << n << ",shaker," << t_shaker << "\n";
+        out << n << ",quick," << t_quick << "\n";
+        out << n << ",std,"   << t_std   << "\n";
+    }
+
+    std::cout << "\nwrote data/timings.csv\n";
     return 0;
 }
