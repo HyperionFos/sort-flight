@@ -3,6 +3,8 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <chrono>
+#include <algorithm>
 
 struct Flight{
     std::string flightNumber;
@@ -33,6 +35,25 @@ struct Flight{
     bool operator>=(const Flight& o) const { return compare(o) >= 0; }
 };
 
+double measure(const std::string& name,
+    std::vector<Flight> data,
+    void (*sortFunc)(std::vector<Flight>&)){
+        auto t1 = std::chrono::high_resolution_clock::now();
+        sortFunc(data);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t2 - t1).count();
+        std::cout << name << ": " << ms << " ms\n";
+        return ms;
+}
+
+// std::sort немного изменненый чтобы measure мог принять его
+
+void stdSort(std::vector<Flight>& a){
+    std::sort(a.begin(), a.end());
+}
+
+// Пузырёк
+
 void bubbleSort(std::vector<Flight>& a) {
     if (a.size() < 2) return;
 
@@ -48,6 +69,8 @@ void bubbleSort(std::vector<Flight>& a) {
         if (!swapped) break;
     } 
 }
+
+// Шейкер
 
 void shakerSort(std::vector<Flight>& a) {
     if (a.size() < 2) return;
@@ -76,7 +99,7 @@ void shakerSort(std::vector<Flight>& a) {
     }
 }
 
-// Quick sort и все вспомогательные функции для него
+// Быстрая сортировка и все вспомогательные функции для нее
 
 size_t medianOfThree(std::vector<Flight>& a, size_t lo, size_t hi){
     size_t mid = lo + (hi - lo) / 2;
@@ -174,21 +197,12 @@ int main() {
     std::vector<Flight> flights = readFlights("data/input.csv");
     std::cout << "read " << flights.size() << " flights\n";
 
-    printFlights("before sort", flights);
-    
-    std::vector<Flight> a = flights;
-    bubbleSort(a);
-    printFlights("after bubble sort", a);
+    measure("bubble", flights, bubbleSort);
+    measure("shaker", flights, shakerSort);
+    measure("quick", flights, quickSort);
+    measure("std", flights, stdSort);
 
-    std::vector<Flight> b = flights;
-    shakerSort(b);
-    printFlights("after shaker sort", b);
-
-    std::vector<Flight> c = flights;
-    quickSort(c);
-    printFlights("after quick sort", c);
-
-    writeFlights("data/output.csv", c);
-    std::cout << "wrote data/output.csv\n";
+ //   writeFlights("data/output.csv", c);
+ //   std::cout << "wrote data/output.csv\n";
     return 0;
 }
