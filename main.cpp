@@ -76,6 +76,47 @@ void shakerSort(std::vector<Flight>& a) {
     }
 }
 
+// Quick sort и все вспомогательные функции для него
+
+size_t medianOfThree(std::vector<Flight>& a, size_t lo, size_t hi){
+    size_t mid = lo + (hi - lo) / 2;
+    if (a[mid] < a[lo]) std::swap(a[lo], a[mid]);
+    if (a[hi] < a[lo]) std::swap(a[lo], a[hi]);
+    if (a[hi] < a[mid]) std::swap(a[mid], a[hi]);
+    return mid;
+}
+
+size_t partition(std::vector<Flight>& a, size_t lo, size_t hi) {
+    size_t pivotIndex = medianOfThree(a, lo, hi);
+    Flight pivot = a[pivotIndex];
+
+    size_t i = lo;
+    size_t j = hi;
+
+    while (true) {
+        while (a[i] < pivot) ++i;
+        while (a[j] > pivot) --j;
+
+        if (i >= j) return j;
+
+        std::swap(a[i], a[j]);
+        ++i;
+        --j;
+    }
+}
+
+void quickSortImpl(std::vector<Flight>& a, size_t lo, size_t hi) {
+    if (lo >= hi) return;
+    size_t p = partition(a, lo, hi);
+    quickSortImpl(a, lo, p);
+    quickSortImpl(a, p + 1, hi);
+}
+
+void quickSort(std::vector<Flight>& a) {
+    if (a.size() < 2) return;
+    quickSortImpl(a, 0, a.size() - 1);
+}
+
 std::vector<Flight> readFlights(const std::string& path){
     std::vector<Flight> flights;
     std::ifstream in(path);
@@ -143,7 +184,11 @@ int main() {
     shakerSort(b);
     printFlights("after shaker sort", b);
 
-    writeFlights("data/output.csv", flights);
+    std::vector<Flight> c = flights;
+    quickSort(c);
+    printFlights("after quick sort", c);
+
+    writeFlights("data/output.csv", c);
     std::cout << "wrote data/output.csv\n";
     return 0;
 }
