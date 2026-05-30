@@ -23,7 +23,15 @@ struct Flight{
     std::string arrivalDate;
     std::string arrivalTime;
     int passengers = 0;
-
+    /**
+     * @brief Функция сравнения
+     *
+     * Порядок полей: дата прилета, время прилета, авиакомпания, (по возрастанию)
+     * пассажиры (по убыванию)
+     *
+     * @param other другой полет для сравнения.
+     * @return -1 если этот < другого, 0 если одинковые все поля, +1 если этот > другого.
+     */
     int compare(const Flight& other) const {
         if (arrivalDate < other.arrivalDate) return -1;
         if (arrivalDate > other.arrivalDate) return +1;
@@ -84,6 +92,16 @@ std::vector<Flight> generateFlights(size_t n, unsigned seed){
     return flights;
 }
 
+/**
+ * @brief Функция замера времени сортировки
+ * 
+ * Копирует данные, которые будут сортироваться. Для каждого запуска записывает какое время было до сортировки,
+ * сортирует данные, записывает время после сортировки.
+ * Вычитает из времени после сортировки время до сортировки и добавляет в общее время. Делит на количество запусков.
+ * 
+ * @return Среднее время на сортировку за n=3 запуска
+ */
+
 double measure(const std::vector<Flight>& source,
                void (*sortFunc)(std::vector<Flight>&),
                int runs = 3) {
@@ -104,9 +122,8 @@ void stdSort(std::vector<Flight>& a){
     std::sort(a.begin(), a.end());
 }
 
-// Пузырёк
 /**
- * @brief Сортирует вектор полетов пузырьком с флагом на ранний выход
+ * @brief Сортировка пузырьком
  *
  * Проходит по парам элементов в массиве и меняет соседние элементы,
  * если они не отсоритрованы. Каждый цикл прохода уменьшает неотсортированный массив на один элемент,
@@ -134,9 +151,8 @@ void bubbleSort(std::vector<Flight>& a) {
     } 
 }
 
-// Шейкер
 /**
- * @brief Сортирует вектор полетов шейкером с флагом на ранний выход
+ * @brief Сортировка шейкером
  *
  * Проходит по парам элементов в массиве с двух сторон и меняет соседние элементы,
  * если они не отсоритрованы. Каждый цикл прохода уменьшает неотсортированный массив на два элемента,
@@ -176,9 +192,9 @@ void shakerSort(std::vector<Flight>& a) {
 }
 
 // Быстрая сортировка и все вспомогательные функции для нее
-// Среднее из трех
 /**
- * @brief Находит pivot сортирует 3 элемента (на первой позиции меньший элемент из трех,
+ * @brief Нахождение среднего
+ * Находит pivot сортирует 3 элемента (на первой позиции меньший элемент из трех,
  * на pivot средний из трех, на последней позиции самый большой из трех)
  * 
  * @param a Вектор из полетов, где ищем средний индекс.
@@ -193,7 +209,7 @@ size_t medianOfThree(std::vector<Flight>& a, size_t lo, size_t hi){
     if (a[hi] < a[mid]) std::swap(a[mid], a[hi]);
     return mid;
 }
-// Разбиение на меньшие массивы
+
 /**
  * @brief Разбиение Хоара для быстрой сортировки
  * 
@@ -227,9 +243,11 @@ size_t partition(std::vector<Flight>& a, size_t lo, size_t hi) {
         --j;
     }
 }
-// Исполнение быстрой сортировки с задаваемыми границами
+
 /**
- * @brief Выполняет быструю сортировку с принимаемыми границами,
+ * @brief Быстрая сортировка
+ * 
+ * Выполняет быструю сортировку с принимаемыми границами,
  * основная рекурсиваная функция которая и сортирует массив при помощи
  * partition и medianOfThreee
  * 
@@ -250,6 +268,16 @@ void quickSort(std::vector<Flight>& a) {
     quickSortImpl(a, 0, a.size() - 1);
 }
 
+/**
+ * @brief Функция для чтения полетов из .CSV файла
+ * 
+ * Открывает файл (если не может - выдает ошибку) и считывает первую строку - 
+ * считывает первую строку и никуда ее не записывает, дальше проходится по строчке
+ * разделяя данные и записывая их в соответствующую переменную
+ * 
+ * @param path путь включая файл откуда читать данные
+ * @return Возвращает массив полетов
+ */
 std::vector<Flight> readFlights(const std::string& path){
     std::vector<Flight> flights;
     std::ifstream in(path);
@@ -277,6 +305,14 @@ std::vector<Flight> readFlights(const std::string& path){
     return flights;
 }
 
+/**
+ * @brief Функция записи полетов в файл
+ * 
+ * Открывает файл (если не может открыть - выдает ошибку) и записывает данные с разделителями
+ * 
+ * @param path куда записывать
+ * @param flights что записывать
+ */
 void writeFlights(const std::string& path, const std::vector<Flight>& flights) {
     std::ofstream out(path);
     if (!out) {
@@ -293,7 +329,14 @@ void writeFlights(const std::string& path, const std::vector<Flight>& flights) {
             << f.passengers << '\n';
     }
 }
-
+/**
+ * @brief Функция вывода полетов
+ * 
+ * Красиво выводит полеты в консоль
+ * 
+ * @param title название 
+ * @param flights полеты
+ */
 void printFlights(const std::string& title, const std::vector<Flight>& flights) {
     std::cout << "===== " << title << " =====\n";
     for (const Flight& f : flights) {
@@ -312,18 +355,25 @@ int main() {
     out << "size,algorithm,time_ms\n";
 
     for (size_t n : sizes) {
-        std::cout << "size = " << n << "\n";
-        std::vector<Flight> source = generateFlights(n, 52);
+        std::cout << "size = " << n << "\n" << std::flush;
+
+        // Генерируем датасеты и сохраняем и в csv
+        std::string path = "data/dataset_" + std::to_string(n) + ".csv";
+        std::vector<Flight> generated = generateFlights(n, 42);
+        writeFlights(path, generated);
+
+        // берем датасаты для сортировки
+        std::vector<Flight> source = readFlights(path);
 
         double t_bubble = (n <= 50000) ? measure(source, bubbleSort) : -1.0;
         double t_shaker = (n <= 50000) ? measure(source, shakerSort) : -1.0;
-        double t_quick = measure(source, quickSort);
-        double t_std = measure(source, stdSort);
+        double t_quick  = measure(source, quickSort);
+        double t_std    = measure(source, stdSort);
 
         if (t_bubble >= 0) std::cout << "  bubble: " << t_bubble << " ms\n";
         if (t_shaker >= 0) std::cout << "  shaker: " << t_shaker << " ms\n";
         std::cout << "  quick : " << t_quick << " ms\n";
-        std::cout << "  std   : " << t_std << " ms\n";
+        std::cout << "  std   : " << t_std    << " ms\n";
 
         if (t_bubble >= 0) out << n << ",bubble," << t_bubble << "\n";
         if (t_shaker >= 0) out << n << ",shaker," << t_shaker << "\n";

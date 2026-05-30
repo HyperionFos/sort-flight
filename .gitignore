@@ -3,3 +3,4 @@
 *.obj
 .vscode/
 __pycache__/
+data/dataset_*.csv
